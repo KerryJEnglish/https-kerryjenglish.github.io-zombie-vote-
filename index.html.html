@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zombie Apocalypse Vote</title>
+
+<style>
+
+*{
+    box-sizing:border-box;
+}
+
+body{
+    font-family:'Segoe UI', Arial, sans-serif;
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:20px;
+
+    background:
+        linear-gradient(
+            rgba(0,0,0,0.65),
+            rgba(0,0,0,0.75)
+        ),
+        url('ZombieApocalypse.png');
+
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+    background-attachment:fixed;
+}
+
+.container{
+    width:100%;
+    max-width:850px;
+
+    background:rgba(255,255,255,0.92);
+    backdrop-filter:blur(8px);
+
+    border-radius:20px;
+    padding:40px;
+
+    text-align:center;
+
+    box-shadow:0 10px 30px rgba(0,0,0,0.4);
+}
+
+h1{
+    margin-top:0;
+    color:#222;
+    font-size:2.3rem;
+}
+
+.question{
+    font-size:1.4rem;
+    color:#333;
+    line-height:1.6;
+    margin-bottom:35px;
+}
+
+.btn{
+    border:none;
+    color:white;
+    font-size:1.5rem;
+    font-weight:bold;
+    padding:22px 40px;
+    border-radius:12px;
+    cursor:pointer;
+    margin:10px;
+    width:320px;
+    transition:0.25s;
+}
+
+.btn:hover{
+    transform:scale(1.04);
+}
+
+.btn:disabled{
+    opacity:0.55;
+    cursor:not-allowed;
+}
+
+.blue{
+    background:#0078D4;
+}
+
+.red{
+    background:#D13438;
+}
+
+.message{
+    min-height:40px;
+    margin-top:25px;
+    font-size:1.1rem;
+    font-weight:bold;
+    color:#107C10;
+}
+
+.notice{
+    margin-top:15px;
+    color:#555;
+}
+
+.admin-controls{
+    margin-top:40px;
+}
+
+.admin-btn{
+    background:#444;
+    color:white;
+    border:none;
+    border-radius:8px;
+    padding:12px 20px;
+    margin:5px;
+    cursor:pointer;
+}
+
+.admin-btn:hover{
+    background:#2f2f2f;
+}
+
+.results{
+    margin-top:35px;
+    display:none;
+}
+
+.bar-container{
+    width:100%;
+    height:36px;
+    background:#ddd;
+    border-radius:8px;
+    overflow:hidden;
+    margin-bottom:20px;
+}
+
+.bar{
+    height:36px;
+    color:white;
+    font-weight:bold;
+    line-height:36px;
+    text-align:center;
+}
+
+.bar-blue{
+    background:#0078D4;
+}
+
+.bar-red{
+    background:#D13438;
+}
+
+.result-title{
+    font-weight:bold;
+    margin-bottom:6px;
+}
+
+.secret{
+    opacity:0.15;
+    font-size:.8rem;
+    margin-top:25px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>🧟 THE APOCALYPSE HAS BEGUN</h1>
+
+    <div class="question">
+        A zombie horde is approaching.<br><br>
+
+        You only have enough resources for ONE choice...
+        <br><br>
+
+        <strong>Will you save yourself</strong>
+        <br>
+        OR
+        <br>
+        <strong>save everyone else?</strong>
+    </div>
+
+    <button id="saveMyselfBtn" class="btn blue">
+        🟦 SAVE MYSELF
+    </button>
+
+    <button id="saveEveryoneBtn" class="btn red">
+        🟥 SAVE EVERYONE ELSE
+    </button>
+
+    <div id="message" class="message"></div>
+
+    <div class="notice">
+        Results will be revealed by the host after voting ends.
+    </div>
+
+    <div class="admin-controls">
+        <button class="admin-btn" onclick="revealResults()">
+            Reveal Results
+        </button>
+
+        <button class="admin-btn" onclick="resetVoting()">
+            Reset Voting
+        </button>
+    </div>
+
+    <div id="resultsSection" class="results">
+
+        <h2>📊 Final Results</h2>
+
+        <div class="result-title">
+            🟦 Save Myself:
+            <span id="myselfVotes">0</span>
+        </div>
+
+        <div class="bar-container">
+            <div id="myselfBar"
+                 class="bar bar-blue"
+                 style="width:0%;">
+                0%
+            </div>
+        </div>
+
+        <div class="result-title">
+            🟥 Save Everyone Else:
+            <span id="everyoneVotes">0</span>
+        </div>
+
+        <div class="bar-container">
+            <div id="everyoneBar"
+                 class="bar bar-red"
+                 style="width:0%;">
+                0%
+            </div>
+        </div>
+
+    </div>
+
+    <div class="secret">
+        Host codes are stored in the page source.
+    </div>
+
+</div>
+
+<script>
+
+// ===== HOST CODES =====
+const REVEAL_CODE = "ZOMBIE2026";
+const RESET_CODE = "SURVIVORRESET";
+
+// ===== LOCAL STORAGE =====
+let saveMyself =
+parseInt(localStorage.getItem("saveMyselfVotes")) || 0;
+
+let saveEveryone =
+parseInt(localStorage.getItem("saveEveryoneVotes")) || 0;
+
+let hasVoted =
+localStorage.getItem("hasVoted") === "true";
+
+// ===== FUNCTIONS =====
+
+function updateResults(){
+
+    document.getElementById("myselfVotes").textContent =
+        saveMyself;
+
+    document.getElementById("everyoneVotes").textContent =
+        saveEveryone;
+
+    const total = saveMyself + saveEveryone;
+
+    const myselfPercent =
+        total === 0 ? 0 :
+        Math.round((saveMyself / total) * 100);
+
+    const everyonePercent =
+        total === 0 ? 0 :
+        Math.round((saveEveryone / total) * 100);
+
+    document.getElementById("myselfBar").style.width =
+        myselfPercent + "%";
+
+    document.getElementById("myselfBar").textContent =
+        myselfPercent + "%";
+
+    document.getElementById("everyoneBar").style.width =
+        everyonePercent + "%";
+
+    document.getElementById("everyoneBar").textContent =
+        everyonePercent + "%";
+}
+
+function disableVoting(){
+
+    document.getElementById("saveMyselfBtn").disabled = true;
+    document.getElementById("saveEveryoneBtn").disabled = true;
+}
+
+function voteMyself(){
+
+    if(hasVoted) return;
+
+    saveMyself++;
+
+    localStorage.setItem(
+        "saveMyselfVotes",
+        saveMyself
+    );
+
+    localStorage.setItem(
+        "hasVoted",
+        "true"
+    );
+
+    hasVoted = true;
+
+    disableVoting();
+
+    document.getElementById("message").textContent =
+        "✅ Vote recorded. You chose SAVE MYSELF.";
+}
+
+function voteEveryone(){
+
+    if(hasVoted) return;
+
+    saveEveryone++;
+
+    localStorage.setItem(
+        "saveEveryoneVotes",
+        saveEveryone
+    );
+
+    localStorage.setItem(
+        "hasVoted",
+        "true"
+    );
+
+    hasVoted = true;
+
+    disableVoting();
+
+    document.getElementById("message").textContent =
+        "✅ Vote recorded. You chose SAVE EVERYONE ELSE.";
+}
+
+function revealResults(){
+
+    const code =
+        prompt("Enter host reveal code:");
+
+    if(code === REVEAL_CODE){
+
+        updateResults();
+
+        document.getElementById("resultsSection")
+            .style.display = "block";
+
+    } else {
+
+        alert("Invalid code.");
+    }
+}
+
+function resetVoting(){
+
+    const code =
+        prompt("Enter host reset code:");
+
+    if(code !== RESET_CODE){
+
+        alert("Invalid code.");
+        return;
+    }
+
+    const confirmReset =
+        confirm("Reset all votes?");
+
+    if(confirmReset){
+
+        localStorage.removeItem(
+            "saveMyselfVotes"
+        );
+
+        localStorage.removeItem(
+            "saveEveryoneVotes"
+        );
+
+        localStorage.removeItem(
+            "hasVoted"
+        );
+
+        location.reload();
+    }
+}
+
+// ===== EVENTS =====
+
+document
+.getElementById("saveMyselfBtn")
+.addEventListener("click", voteMyself);
+
+document
+.getElementById("saveEveryoneBtn")
+.addEventListener("click", voteEveryone);
+
+// ===== PAGE LOAD =====
+
+if(hasVoted){
+
+    disableVoting();
+
+    document.getElementById("message").textContent =
+        "✅ You have already voted.";
+}
+
+updateResults();
+
+</script>
+
+</body>
+</html>
