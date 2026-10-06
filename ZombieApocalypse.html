@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zombie Apocalypse Vote</title>
+
+<style>
+
+body{
+    font-family:Segoe UI, Arial, sans-serif;
+    background:#f4f6f9;
+    margin:0;
+    padding:40px;
+    text-align:center;
+}
+
+.container{
+    max-width:800px;
+    margin:auto;
+    background:white;
+    padding:30px;
+    border-radius:16px;
+    box-shadow:0 5px 20px rgba(0,0,0,.15);
+}
+
+h1{
+    color:#222;
+}
+
+.question{
+    font-size:24px;
+    margin:30px 0;
+    line-height:1.5;
+}
+
+.btn{
+    border:none;
+    color:white;
+    padding:20px 40px;
+    margin:10px;
+    border-radius:10px;
+    font-size:22px;
+    cursor:pointer;
+    transition:.2s;
+}
+
+.btn:hover{
+    transform:scale(1.05);
+}
+
+.blue{
+    background:#0078D4;
+}
+
+.red{
+    background:#D13438;
+}
+
+.disabled{
+    opacity:.5;
+    cursor:not-allowed;
+}
+
+.message{
+    margin-top:25px;
+    font-size:22px;
+    font-weight:bold;
+    color:green;
+}
+
+.admin-section{
+    margin-top:40px;
+}
+
+.admin-btn{
+    background:#444;
+    color:white;
+    border:none;
+    padding:12px 25px;
+    border-radius:8px;
+    cursor:pointer;
+    margin:5px;
+}
+
+.results{
+    display:none;
+    margin-top:30px;
+}
+
+.bar-container{
+    width:100%;
+    background:#ddd;
+    border-radius:10px;
+    overflow:hidden;
+    margin-bottom:20px;
+}
+
+.bar{
+    height:35px;
+    color:white;
+    font-weight:bold;
+    line-height:35px;
+    text-align:center;
+}
+
+.bar-blue{
+    background:#0078D4;
+}
+
+.bar-red{
+    background:#D13438;
+}
+
+.small{
+    margin-top:15px;
+    color:#666;
+    font-size:14px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🧟 Zombie Apocalypse Decision</h1>
+
+<div class="question">
+The zombies have arrived.<br><br>
+
+You only have enough resources for ONE choice:
+</div>
+
+<button id="saveMyselfBtn" class="btn blue">
+🟦 SAVE MYSELF
+</button>
+
+<button id="saveEveryoneBtn" class="btn red">
+🟥 SAVE EVERYONE ELSE
+</button>
+
+<div id="message" class="message"></div>
+
+<div class="small">
+Results will be revealed by the host when voting ends.
+</div>
+
+<div class="admin-section">
+
+<button class="admin-btn" onclick="revealResults()">
+Reveal Results
+</button>
+
+<button class="admin-btn" onclick="resetVoting()">
+Reset Voting
+</button>
+
+</div>
+
+<div id="resultsSection" class="results">
+
+<h2>📊 Final Results</h2>
+
+<p>
+🟦 Save Myself:
+<span id="myselfVotes">0</span>
+</p>
+
+<div class="bar-container">
+<div id="myselfBar" class="bar bar-blue" style="width:0%">
+0%
+</div>
+</div>
+
+<p>
+🟥 Save Everyone Else:
+<span id="everyoneVotes">0</span>
+</p>
+
+<div class="bar-container">
+<div id="everyoneBar" class="bar bar-red" style="width:0%">
+0%
+</div>
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+// CHANGE THESE CODES
+const REVEAL_CODE = "ZOMBIE2026";
+const RESET_CODE = "SURVIVORRESET";
+
+// Vote totals
+let saveMyself =
+parseInt(localStorage.getItem("saveMyselfVotes")) || 0;
+
+let saveEveryone =
+parseInt(localStorage.getItem("saveEveryoneVotes")) || 0;
+
+let hasVoted =
+localStorage.getItem("hasVoted") === "true";
+
+function updateResults(){
+
+    document.getElementById("myselfVotes").innerText =
+    saveMyself;
+
+    document.getElementById("everyoneVotes").innerText =
+    saveEveryone;
+
+    let total = saveMyself + saveEveryone;
+
+    let myselfPct =
+    total === 0 ? 0 :
+    Math.round(saveMyself / total * 100);
+
+    let everyonePct =
+    total === 0 ? 0 :
+    Math.round(saveEveryone / total * 100);
+
+    document.getElementById("myselfBar").style.width =
+    myselfPct + "%";
+
+    document.getElementById("myselfBar").innerText =
+    myselfPct + "%";
+
+    document.getElementById("everyoneBar").style.width =
+    everyonePct + "%";
+
+    document.getElementById("everyoneBar").innerText =
+    everyonePct + "%";
+}
+
+function disableVoting(){
+
+    document.getElementById("saveMyselfBtn").disabled = true;
+    document.getElementById("saveEveryoneBtn").disabled = true;
+
+    document.getElementById("saveMyselfBtn")
+    .classList.add("disabled");
+
+    document.getElementById("saveEveryoneBtn")
+    .classList.add("disabled");
+}
+
+document.getElementById("saveMyselfBtn")
+.addEventListener("click", function(){
+
+    if(hasVoted) return;
+
+    saveMyself++;
+
+    localStorage.setItem(
+        "saveMyselfVotes",
+        saveMyself
+    );
+
+    localStorage.setItem(
+        "hasVoted",
+        "true"
+    );
+
+    hasVoted = true;
+
+    disableVoting();
+
+    document.getElementById("message").innerText =
+    "✅ Vote recorded. You chose SAVE MYSELF.";
+
+});
+
+document.getElementById("saveEveryoneBtn")
+.addEventListener("click", function(){
+
+    if(hasVoted) return;
+
+    saveEveryone++;
+
+    localStorage.setItem(
+        "saveEveryoneVotes",
+        saveEveryone
+    );
+
+    localStorage.setItem(
+        "hasVoted",
+        "true"
+    );
+
+    hasVoted = true;
+
+    disableVoting();
+
+    document.getElementById("message").innerText =
+    "✅ Vote recorded. You chose SAVE EVERYONE ELSE.";
+
+});
+
+function revealResults(){
+
+    const code =
+    prompt("Enter host reveal code:");
+
+    if(code === REVEAL_CODE){
+
+        updateResults();
+
+        document.getElementById("resultsSection")
+        .style.display = "block";
+
+    }
+    else{
+        alert("Invalid code.");
+    }
+}
+
+function resetVoting(){
+
+    const code =
+    prompt("Enter host reset code:");
+
+    if(code === RESET_CODE){
+
+        const confirmReset =
+        confirm("Reset ALL votes?");
+
+        if(confirmReset){
+
+            localStorage.removeItem("saveMyselfVotes");
+            localStorage.removeItem("saveEveryoneVotes");
+            localStorage.removeItem("hasVoted");
+
+            location.reload();
+        }
+    }
+    else{
+        alert("Invalid code.");
+    }
+}
+
+if(hasVoted){
+
+    disableVoting();
+
+    document.getElementById("message").innerText =
+    "✅ You have already voted.";
+
+}
+
+updateResults();
+
+</script>
+
+</body>
+</html>
