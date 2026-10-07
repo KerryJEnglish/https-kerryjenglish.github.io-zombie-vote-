@@ -1,0 +1,192 @@
+<script type="module">
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+
+import {
+  getFirestore,
+  doc,
+  updateDoc,
+  getDoc,
+  increment
+}
+from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB95WgZ3E3c-Q2WsBMUMTzW6qWTxU1busU",
+  authDomain: "zombie-vote.firebaseapp.com",
+  projectId: "zombie-vote",
+  storageBucket: "zombie-vote.firebasestorage.app",
+  messagingSenderId: "1072618367423",
+  appId: "1:1072618367423:web:bf727c460633be9641190a",
+  measurementId: "G-6GK534DNBC"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const REVEAL_CODE = "ZOMBIE2026";
+const RESET_CODE = "SURVIVORRESET";
+
+let hasVoted =
+    localStorage.getItem("hasVoted") === "true";
+
+function disableVoting() {
+    document.getElementById("saveMyselfBtn").disabled = true;
+    document.getElementById("saveEveryoneBtn").disabled = true;
+}
+
+async function voteMyself() {
+
+    if (hasVoted) return;
+
+    await updateDoc(
+        doc(db, "votes", "totals"),
+        {
+            saveMyself: increment(1)
+        }
+    );
+
+    localStorage.setItem("hasVoted", "true");
+    hasVoted = true;
+
+    disableVoting();
+
+    document.getElementById("message").innerHTML =
+        "✅ Vote recorded. You chose SAVE MYSELF.";
+}
+
+async function voteEveryone() {
+
+    if (hasVoted) return;
+
+    await updateDoc(
+        doc(db, "votes", "totals"),
+        {
+            saveEveryone: increment(1)
+        }
+    );
+
+    localStorage.setItem("hasVoted", "true");
+    hasVoted = true;
+
+    disableVoting();
+
+    document.getElementById("message").innerHTML =
+        "✅ Vote recorded. You chose SAVE EVERYONE ELSE.";
+}
+
+async function updateResults() {
+
+    const snapshot =
+        await getDoc(
+            doc(db, "votes", "totals")
+        );
+
+    const data = snapshot.data();
+
+    const saveMyself =
+        data.saveMyself || 0;
+
+    const saveEveryone =
+        data.saveEveryone || 0;
+
+    const total =
+        saveMyself + saveEveryone;
+
+    const myselfPct =
+        total === 0
+            ? 0
+            : Math.round(
+                (saveMyself / total) * 100
+            );
+
+    const everyonePct =
+        total === 0
+            ? 0
+            : Math.round(
+                (saveEveryone / total) * 100
+            );
+
+    document.getElementById("myselfVotes")
+        .textContent = saveMyself;
+
+    document.getElementById("everyoneVotes")
+        .textContent = saveEveryone;
+
+    document.getElementById("myselfBar")
+        .style.width = myselfPct + "%";
+
+    document.getElementById("myselfBar")
+        .textContent = myselfPct + "%";
+
+    document.getElementById("everyoneBar")
+        .style.width = everyonePct + "%";
+
+    document.getElementById("everyoneBar")
+        .textContent = everyonePct + "%";
+}
+
+window.revealResults = async function() {
+
+    const code =
+        prompt("Enter host reveal code:");
+
+    if (code !== REVEAL_CODE) {
+
+        alert("Invalid code");
+        return;
+    }
+
+    await updateResults();
+
+    document.getElementById("resultsSection")
+        .style.display = "block";
+};
+
+window.resetVoting = async function() {
+
+    const code =
+        prompt("Enter host reset code:");
+
+    if (code !== RESET_CODE) {
+
+        alert("Invalid code");
+        return;
+    }
+
+    if (!confirm("Reset all votes?"))
+        return;
+
+    await updateDoc(
+        doc(db, "votes", "totals"),
+        {
+            saveMyself: 0,
+            saveEveryone: 0
+        }
+    );
+
+    localStorage.removeItem("hasVoted");
+
+    alert("Votes reset successfully.");
+
+    location.reload();
+};
+
+document
+.getElementById("saveMyselfBtn")
+.addEventListener("click", voteMyself);
+
+document
+.getElementById("saveEveryoneBtn")
+.addEventListener("click", voteEveryone);
+
+if (hasVoted) {
+
+    disableVoting();
+
+    document.getElementById("message").innerHTML =
+        "✅ You have already voted.";
+}
+
+</script>
